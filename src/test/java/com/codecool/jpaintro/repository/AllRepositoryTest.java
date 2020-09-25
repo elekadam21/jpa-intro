@@ -4,6 +4,7 @@ import com.codecool.jpaintro.entity.Address;
 import com.codecool.jpaintro.entity.Location;
 import com.codecool.jpaintro.entity.School;
 import com.codecool.jpaintro.entity.Student;
+import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -141,5 +142,111 @@ public class AllRepositoryTest {
 
         assertThat(studentRepository.findAll())
                 .hasSize(0);
+    }
+
+    @Test
+    public void findByNameStartingWithOrBirthDateBetween() {
+        Student john = Student.builder()
+                .email("john@codecool.com")
+                .name("John")
+                .build();
+
+        Student jane = Student.builder()
+                .email("jane@codecool.com")
+                .name("Jane")
+                .build();
+
+        Student martha = Student.builder()
+                .email("martha@codecool.com")
+                .name("Martha")
+                .build();
+
+        Student peter = Student.builder()
+                .email("peter@codecool.com")
+                .birthDate(LocalDate.of(2010, 1, 1))
+                .build();
+
+        Student steve = Student.builder()
+                .email("steve@codecool.com")
+                .birthDate(LocalDate.of(2011, 1, 2))
+                .build();
+
+        studentRepository.saveAll(Lists.newArrayList(john, jane, martha, peter, steve));
+
+        List<Student> filteredStudents = studentRepository.findByNameStartingWithOrBirthDateBetween("J",
+                LocalDate.of(2009, 1, 1),
+                LocalDate.of(2011, 1, 1));
+
+        assertThat(filteredStudents)
+                .containsExactlyInAnyOrder(john, jane, peter);
+    }
+
+    @Test
+    public void findAllCountry() {
+
+        Student first = Student.builder()
+                .email("first@codecool.com")
+                .address(Address.builder().country("Hungary").build())
+                .build();
+
+        Student second = Student.builder()
+                .email("second@codecool.com")
+                .address(Address.builder().country("Hungary").build())
+                .build();
+
+        Student third = Student.builder()
+                .email("third@codecool.com")
+                .address(Address.builder().country("Poland").build())
+                .build();
+
+        Student fourth = Student.builder()
+                .email("forth@codecool.com")
+                .address(Address.builder().country("Poland").build())
+                .build();
+
+        studentRepository.saveAll(Lists.newArrayList(first, second, third, fourth));
+
+        List<String> allCountry = studentRepository.findAllCountry();
+
+        assertThat(allCountry)
+                .hasSize(2)
+                .containsOnlyOnce("Poland", "Hungary");
+    }
+
+    @Test
+    public void updateAllToUSAByStudentName() {
+        Address address1 = Address.builder()
+                .country("Hungary")
+                .build();
+
+        Address address2 = Address.builder()
+                .country("Poland")
+                .build();
+
+        Address address3 = Address.builder()
+                .country("Germany")
+                .build();
+
+        Student student = Student.builder()
+                .name("temp")
+                .email("temp@codecool.com")
+                .address(address1)
+                .build();
+
+        studentRepository.save(student);
+        addressRepository.save(address2);
+        addressRepository.save(address3);
+
+        assertThat(addressRepository.findAll())
+                .hasSize(3)
+                .noneMatch(address -> address.getCountry().equals("USA"));
+
+        int updatedRows = addressRepository.updateAllToUSAByStudentName("temp");
+        assertThat(updatedRows).isEqualTo(1);
+
+        assertThat(addressRepository.findAll())
+                .hasSize(3)
+                .anyMatch(address -> address.getCountry().equals("USA"));
+
     }
 }
